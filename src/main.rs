@@ -12,6 +12,11 @@ fn main() {
     noecho();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
     keypad(stdscr(), true);
+
+    let mut max_x = 0;
+    let mut max_y = 0;
+    getmaxyx(stdscr(), &mut max_y, &mut max_x);
+
     init_pair(1, COLOR_RED, COLOR_BLACK);
     
     let path = default_path();
@@ -27,17 +32,17 @@ fn main() {
         let my_menu = new_menu(&mut items);
         menu_opts_off(my_menu, O_SHOWDESC);
 
-        let my_menu_win = newwin(9, 18, 4, 4);
+        let my_menu_win = newwin(12, max_x, 0, 0);
         keypad(my_menu_win, true);
         
         set_menu_win(my_menu, my_menu_win);
         set_menu_sub(my_menu, derwin(my_menu_win, 5, 0, 2, 2));
 
-        set_menu_mark(my_menu, " * ");
+        set_menu_mark(my_menu, " > ");
 
         box_(my_menu_win, 0, 0);
-        mvprintw(LINES() - 3, 0, "Press <ENTER> to see the option selected");
-        mvprintw(LINES() - 2, 0, "Q to exit");
+        mvprintw(LINES() - 2, 0, "A to add new mission");
+        mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
         refresh();
 
         /* Post the menu */
@@ -46,14 +51,39 @@ fn main() {
 
         mv(20, 0);
         clrtoeol();
+            
+        let repaint_menu = || {
+            clear();
+            wclear(my_menu_win);
+            set_menu_win(my_menu, my_menu_win);
+            set_menu_sub(my_menu, derwin(my_menu_win, 5, 0, 2, 2));
+            set_menu_mark(my_menu, " > ");
+            box_(my_menu_win, 0, 0);
+            mvprintw(LINES() - 2, 0, "A to add new mission");
+            mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
+            let index = item_index(current_item(my_menu)) as usize;
+            mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
+            mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+            refresh();
+        };
         
+        mvprintw(LINES() - 2, 0, "A to add new mission");
+        mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
         let index = item_index(current_item(my_menu)) as usize;
-        mvprintw(20, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
-        mvprintw(21, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+        mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
+        mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+
         pos_menu_cursor(my_menu);
+
         let mut ch = getch();
         while ch != 81 && ch != 113 {
             match ch {
+                65 | 97 => {
+
+                },
+                KEY_RESIZE => {
+                    repaint_menu();
+                },
                 KEY_UP => {
                     menu_driver(my_menu, REQ_UP_ITEM);
                 },
@@ -63,11 +93,6 @@ fn main() {
                 10 => {/* Enter */
                     mv(20, 0);
                     clrtoeol();
-                    
-                    let index = item_index(current_item(my_menu)) as usize;
-                    mvprintw(20, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
-                    //missions[index].title = "A Life Well Spent".to_string();
-                    mvprintw(21, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
                     pos_menu_cursor(my_menu);
                 },
                 _ => {}
@@ -87,5 +112,9 @@ fn main() {
     }
 
     write_to_file(&path, &log);
+}
+
+fn draw_menu() {
+
 }
 

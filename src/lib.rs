@@ -56,12 +56,8 @@ pub struct Log {
 
 impl Log {
 
-    pub fn mission_list(&self) -> Vec<&Mission> {
-        let mut list = Vec::new();
-        for index in self.graph.node_indices() {
-            list.push(self.graph.node_weight(index).unwrap());
-        }
-        list
+    pub fn mission_list(&mut self) -> Vec<&mut Mission> {
+        self.graph.node_weights_mut().collect()
     }
 }
 

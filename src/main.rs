@@ -4,6 +4,10 @@ use alws::*;
 extern crate ncurses;
 use ncurses::*;
 
+fn show_menu() {
+
+}
+
 fn main() {
 
     initscr();
@@ -43,36 +47,16 @@ fn main() {
         set_menu_mark(my_menu, " > ");
 
         box_(my_menu_win, 0, 0);
-        mvprintw(LINES() - 2, 0, "A to add new mission");
-        mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
         refresh();
 
         /* Post the menu */
         post_menu(my_menu);
         wrefresh(my_menu_win);
-
-        mv(20, 0);
-        clrtoeol();
-
+        
         let free_menus = |items: &Vec<ITEM>| {
             for &item in items.iter() {
                 free_item(item);
             }
-        };
-            
-        let repaint_menu = || {
-            clear();
-            wclear(my_menu_win);
-            wresize(my_menu_win, 12, COLS());
-            set_menu_mark(my_menu, " > ");
-            scale_menu(my_menu, &mut LINES(), &mut COLS());
-            box_(my_menu_win, 0, 0);
-            mvprintw(LINES() - 2, 0, "A to add new mission");
-            mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
-            let index = item_index(current_item(my_menu)) as usize;
-            mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
-            mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
-            refresh();
         };
         
         let show_current = || {
@@ -82,10 +66,19 @@ fn main() {
             mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
             mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
         };
+            
+        let repaint_menu = || {
+            clear();
+            wclear(my_menu_win);
+            wresize(my_menu_win, 12, COLS());
+            set_menu_mark(my_menu, " > ");
+            scale_menu(my_menu, &mut LINES(), &mut COLS());
+            box_(my_menu_win, 0, 0);
+            show_current();
+            refresh();
+        };
 
         show_current();
-
-        pos_menu_cursor(my_menu);
 
         let mut ch = getch();
         while ch != 81 && ch != 113 {
@@ -104,9 +97,6 @@ fn main() {
                 },
                 10 => {/* Enter */
                     show_current();
-                    mv(20, 0);
-                    clrtoeol();
-                    pos_menu_cursor(my_menu);
                 },
                 _ => {}
             }

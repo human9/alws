@@ -1,102 +1,89 @@
-use std::error::Error;
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::Path;
-use std::path::PathBuf;
-use std::env;
+extern crate alws;
+use alws::*;
 
-extern crate petgraph;
-use petgraph::Graph;
-
-extern crate chrono;
-use chrono::prelude::*;
-
-#[macro_use]
-extern crate serde_derive;
-extern crate serde;
-use serde::de::DeserializeOwned;
-extern crate serde_json;
-
-#[derive(Serialize, Deserialize, Debug)]
-struct Mission {
-    title: String,
-    description: String,
-    timestamp: DateTime<Utc>,
-    entries: Vec<MissionEntry>,
-    completion: Option<MissionEntry>,
-}
-
-impl Mission {
-    pub fn new(title: String, description: String) -> Self {
-        Mission {
-            title,
-            description,
-            timestamp: Utc::now(),
-            entries: Vec::new(),
-            completion: None,
-        }
-    }
-
-    pub fn add_entry(&mut self, entry_text: String) {
-        let entry = MissionEntry {
-            timestamp: Utc::now(),
-            entry_text,
-        };
-        self.entries.push(entry); 
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct MissionEntry {
-    timestamp: DateTime<Utc>,
-    entry_text: String,
-}
+extern crate ncurses;
+use ncurses::*;
 
 fn main() {
 
+    initscr();
+    start_color();
+    cbreak();
+    noecho();
+    curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+    keypad(stdscr(), true);
+    init_pair(1, COLOR_RED, COLOR_BLACK);
+    
     let path = default_path();
     let file = open_file(&path);
     let log = open_log(&file);
 
-    write_to_file(&path, &log);
-}
-
-fn open_log(file: &File) -> Graph<Mission, Option<String>> {
-    let graph = match serde_json::from_reader(file) {
-        Ok(graph) => graph,
-        Err(_) => create_log(),
-    };
-    graph
-}
-
-fn open_file(path: &PathBuf) -> File {
-    match File::open(path) {
-        Err(_) => match File::create(&path) {
-            Ok(file) => file,
-            Err(why) => panic!("failed to create or open {}: {}", path.display(), why.description()),
-        }
-        Ok(file) => file,
+    let mut missions = log.mission_list();
+    let mut items = Vec::new();
+    let mut i = 0;
+    for mission in &missions {
+        items.push(new_item(mission.title.clone(), mission.description.clone()));
+        i += 1;
     }
+    let my_menu = new_menu(&mut items);
+    menu_opts_off(my_menu, O_SHOWDESC);
+
+    let my_menu_win = newwin(9, 18, 4, 4);
+    keypad(my_menu_win, true);
+    
+    set_menu_win(my_menu, my_menu_win);
+    set_menu_sub(my_menu, derwin(my_menu_win, 5, 0, 2, 2));
+
+    set_menu_mark(my_menu, " * ");
+
+    box_(my_menu_win, 0, 0);
+    mvprintw(LINES() - 3, 0, "Press <ENTER> to see the option selected");
+    mvprintw(LINES() - 2, 0, "F1 to exit");
+    refresh();
+
+    /* Post the menu */
+    post_menu(my_menu);
+    wrefresh(my_menu_win);
+
+    mv(20, 0);
+    clrtoeol();
+    
+    let index = item_index(current_item(my_menu)) as usize;
+    mvprintw(20, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
+    mvprintw(21, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+    pos_menu_cursor(my_menu);
+    let mut ch = getch();
+    while ch != KEY_F(1) {
+        match ch {
+            KEY_UP => {
+                menu_driver(my_menu, REQ_UP_ITEM);
+            },
+            KEY_DOWN => {
+                menu_driver(my_menu, REQ_DOWN_ITEM);
+            },
+            10 => {/* Enter */
+                mv(20, 0);
+                clrtoeol();
+                
+                let index = item_index(current_item(my_menu)) as usize;
+                mvprintw(20, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
+                mvprintw(21, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+                pos_menu_cursor(my_menu);
+            },
+            _ => {}
+        }
+        wrefresh(my_menu_win);
+        ch = getch();
+    }
+    unpost_menu(my_menu);
+
+    /* free items */
+    for &item in items.iter() {
+        free_item(item);
+    }
+    free_menu(my_menu);
+    endwin();
+    
+    //write_to_file(&path, &log);
 }
 
-fn default_path() -> PathBuf {
-    let mut path = match env::home_dir() {
-        Some(path) => path,
-        None => panic!("Failed to find home dir!"),
-    };
-    path.push(".alws.json");
-    path
-}
-
-fn write_to_file(path: &PathBuf, log: &Graph<Mission, Option<String>>) {
-    let file = File::create(path).unwrap();
-    serde_json::to_writer_pretty(&file, log).unwrap();
-}
-
-fn create_log() -> Graph<Mission, Option<String>> {
-    let mut graph = Graph::<Mission, Option<String>>::new();
-    let mut mission = Mission::new("A Life Well Spent".to_string(), "The winds of a new beginning blow".to_string());
-    mission.add_entry("Something happened on this date".to_string());
-    graph.add_node(mission);
-    graph
-}

@@ -25,6 +25,7 @@ fn main() {
 
     {
         let mut missions = log.mission_list();
+
         let mut items = Vec::new();
         for mission in &missions {
             items.push(new_item(mission.title.clone(), mission.description.clone()));
@@ -36,7 +37,8 @@ fn main() {
         keypad(my_menu_win, true);
         
         set_menu_win(my_menu, my_menu_win);
-        set_menu_sub(my_menu, derwin(my_menu_win, 5, 0, 2, 2));
+        let subwindow = derwin(my_menu_win, 5, 0, 2, 2);
+        set_menu_sub(my_menu, subwindow);
 
         set_menu_mark(my_menu, " > ");
 
@@ -51,13 +53,19 @@ fn main() {
 
         mv(20, 0);
         clrtoeol();
+
+        let free_menus = |items: &Vec<ITEM>| {
+            for &item in items.iter() {
+                free_item(item);
+            }
+        };
             
         let repaint_menu = || {
             clear();
             wclear(my_menu_win);
-            set_menu_win(my_menu, my_menu_win);
-            set_menu_sub(my_menu, derwin(my_menu_win, 5, 0, 2, 2));
+            wresize(my_menu_win, 12, COLS());
             set_menu_mark(my_menu, " > ");
+            scale_menu(my_menu, &mut LINES(), &mut COLS());
             box_(my_menu_win, 0, 0);
             mvprintw(LINES() - 2, 0, "A to add new mission");
             mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
@@ -67,11 +75,15 @@ fn main() {
             refresh();
         };
         
-        mvprintw(LINES() - 2, 0, "A to add new mission");
-        mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
-        let index = item_index(current_item(my_menu)) as usize;
-        mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
-        mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+        let show_current = || {
+            mvprintw(LINES() - 2, 0, "A to add new mission");
+            mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
+            let index = item_index(current_item(my_menu)) as usize;
+            mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
+            mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
+        };
+
+        show_current();
 
         pos_menu_cursor(my_menu);
 
@@ -91,6 +103,7 @@ fn main() {
                     menu_driver(my_menu, REQ_DOWN_ITEM);
                 },
                 10 => {/* Enter */
+                    show_current();
                     mv(20, 0);
                     clrtoeol();
                     pos_menu_cursor(my_menu);
@@ -102,11 +115,7 @@ fn main() {
         }
         unpost_menu(my_menu);
 
-        /* free items */
-        for &item in items.iter() {
-            free_item(item);
-        }
-        free_menu(my_menu);
+        free_menus(&items);
         endwin();
     
     }

@@ -97,6 +97,8 @@ fn create_log() -> Log {
     let mut graph = Graph::<Mission, Option<String>>::new();
     let mut mission = Mission::new("A Life Well Spent".to_string(), "The winds of a new beginning blow".to_string());
     mission.add_entry("Something happened on this date".to_string());
+    let mut mission2 = Mission::new("A Test of Courage".to_string(), "Many Bothans died to bring us this information".to_string());
     graph.add_node(mission);
+    graph.add_node(mission2);
     Log { graph }
 }

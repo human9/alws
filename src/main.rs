@@ -4,9 +4,24 @@ use alws::*;
 extern crate ncurses;
 use ncurses::*;
 
-fn show_menu(log: &mut Log) -> bool {
+fn clrprint(y: i32, x: i32, string: &str) {
+    mv(y, x);
+    clrtoeol();
+    mvprintw(y, x, string);
+}
 
-    clear();
+fn clrprintw(window: WINDOW, y: i32, x: i32, string: &str) {
+    wmove(window, y, x);
+    wclrtoeol(window);
+    mvwprintw(window, y, x, string);
+}
+
+fn activate_fields(mission: &mut Mission) {
+    clrprint(13, 0, &format!("Mission began: {}", mission.timestamp));
+    clrprint(14, 0, &format!("Mission description: {}", mission.description));
+}
+
+fn show_menu(log: &mut Log) -> bool {
 
     let mut missions = log.mission_list();
 
@@ -17,16 +32,21 @@ fn show_menu(log: &mut Log) -> bool {
     let my_menu = new_menu(&mut items);
     menu_opts_off(my_menu, O_SHOWDESC);
 
-    let my_menu_win = newwin(12, COLS(), 0, 0);
-    keypad(my_menu_win, true);
-    
-    set_menu_win(my_menu, my_menu_win);
-    let subwindow = derwin(my_menu_win, 5, 0, 2, 2);
-    set_menu_sub(my_menu, subwindow);
+    set_menu_mark(my_menu, "> ");
 
-    set_menu_mark(my_menu, " > ");
+    let (mut rows, mut cols) = (0, 0);
+    scale_menu(my_menu, &mut rows, &mut cols);
+    rows = LINES() - 2;
+    cols += 4;
+   
+    let my_menu_win = newwin(rows, cols, 0, 0);
+    set_menu_win(my_menu, my_menu_win);
+    let subwindow = derwin(my_menu_win, rows-2, cols-2, 2, 2);
+    set_menu_sub(my_menu, subwindow);
+    keypad(my_menu_win, true);
 
     box_(my_menu_win, 0, 0);
+    mvwprintw(my_menu_win, 0, 2, "MISSION LIST");
     refresh();
 
     post_menu(my_menu);
@@ -38,19 +58,8 @@ fn show_menu(log: &mut Log) -> bool {
         }
     };
     
-    let show_current = || {
-        mvprintw(LINES() - 2, 0, "A to add new mission");
-        mvprintw(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
-        let index = item_index(current_item(my_menu)) as usize;
-        mv(13, 0);
-        clrtoeol();
-        mv(14, 0);
-        clrtoeol();
-        mvprintw(13, 0, &format!("Mission began: {}", missions[index].timestamp)[..]);
-        mvprintw(14, 0, &format!("Mission description: {}", item_description(current_item(my_menu)))[..]);
-    };
-
-    show_current();
+    clrprint(LINES() - 2, 0, "A to add new mission");
+    clrprint(LINES() - 1, 0, "Press <ENTER> to see the option selected, Q to exit");
 
     let mut redraw = false;
     let mut ch = getch();
@@ -70,8 +79,9 @@ fn show_menu(log: &mut Log) -> bool {
                 menu_driver(my_menu, REQ_DOWN_ITEM);
             },
             10 => {/* Enter */
-                show_current();
                 pos_menu_cursor(my_menu);
+                let index = item_index(current_item(my_menu)) as usize;
+                activate_fields(&mut missions[index]);
             },
             _ => {}
         }
@@ -113,8 +123,3 @@ fn main() {
 
     write_to_file(&path, &log);
 }
-
-fn draw_menu() {
-
-}
-

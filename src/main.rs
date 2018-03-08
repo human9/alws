@@ -16,12 +16,15 @@ fn clrprintw(window: WINDOW, y: i32, x: i32, string: &str) {
     mvwprintw(window, y, x, string);
 }
 
-fn activate_fields(mission: &mut Mission) {
-    clrprint(13, 0, &format!("Mission began: {}", mission.timestamp));
-    clrprint(14, 0, &format!("Mission description: {}", mission.description));
+fn activate_fields(mission: &mut Mission, window: &mut WINDOW) {
+    //need a subwindow to prevent destroying border
+    mvwprintw(*window, 2, 2, &format!("TIMESTAMP: {}", mission.timestamp));
+    mvwprintw(*window, 3, 2, &format!("MISSION BRIEF: {}", mission.description));
+    wrefresh(*window);
 }
 
-fn show_menu(log: &mut Log) -> bool {
+//need to save menu position
+fn show_menu(log: &mut Log, window: &mut WINDOW) -> bool {
 
     let mut missions = log.mission_list();
 
@@ -38,6 +41,7 @@ fn show_menu(log: &mut Log) -> bool {
     scale_menu(my_menu, &mut rows, &mut cols);
     rows = LINES() - 2;
     cols += 4;
+
    
     let my_menu_win = newwin(rows, cols, 0, 0);
     set_menu_win(my_menu, my_menu_win);
@@ -48,6 +52,15 @@ fn show_menu(log: &mut Log) -> bool {
     box_(my_menu_win, 0, 0);
     mvwprintw(my_menu_win, 0, 2, "MISSION LIST");
     refresh();
+    
+    wresize(*window, LINES() - 2, COLS()-cols);
+    mvwin(*window, 0, cols);
+    wclear(*window);
+    box_(*window, 0, 0);
+    mvwprintw(*window, 0, 2, "MISSION DETAILS");
+    let index = item_index(current_item(my_menu)) as usize;
+    activate_fields(&mut missions[index], window);
+    wrefresh(*window);
 
     post_menu(my_menu);
     wrefresh(my_menu_win);
@@ -81,7 +94,7 @@ fn show_menu(log: &mut Log) -> bool {
             10 => {/* Enter */
                 pos_menu_cursor(my_menu);
                 let index = item_index(current_item(my_menu)) as usize;
-                activate_fields(&mut missions[index]);
+                activate_fields(&mut missions[index], window);
             },
             _ => {}
         }
@@ -115,7 +128,8 @@ fn main() {
     let file = open_file(&path);
     let mut log = open_log(&file);
 
-    while show_menu(&mut log) == true {
+    let mut window = newwin(2, 2, 0, 0);
+    while show_menu(&mut log, &mut window) == true {
     
     }
     

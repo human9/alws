@@ -35,6 +35,7 @@ impl LogView {
             details: newwin(2, 2, 0, 0),
             log,
         };
+
         lv.free_menu();
         lv.build_menu(0);
         lv
@@ -92,7 +93,6 @@ impl LogView {
         mvwprintw(my_menu_win, 0, 2, "MISSION LIST");
         refresh();
         
-
         post_menu(my_menu);
         wrefresh(my_menu_win);
         
@@ -127,13 +127,14 @@ impl LogView {
 fn main() {
 
     initscr();
+    use_default_colors();
     start_color();
     cbreak();
     noecho();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
     keypad(stdscr(), true);
 
-    init_pair(1, COLOR_RED, COLOR_BLACK);
+    init_pair(1, -1, -1);
     
     let path = default_path();
     let file = open_file(&path);

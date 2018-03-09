@@ -1,6 +1,10 @@
 extern crate alws;
 use alws::*;
 
+extern crate chrono;
+use chrono::prelude::*;
+
+
 extern crate ncurses;
 use ncurses::*;
 
@@ -16,12 +20,18 @@ fn clrprintw(window: WINDOW, y: i32, x: i32, string: &str) {
     mvwprintw(window, y, x, string);
 }
 
+fn wprint(window: WINDOW, string: &str) {
+    wclrtoeol(window);
+    wprintw(window, string);
+}
+
 
 struct LogView {
     menu: MENU,
     items: Vec<ITEM>,
     menu_window: WINDOW,
     details: WINDOW,
+    details_window: WINDOW,
     log: Log,
 }
 
@@ -33,6 +43,7 @@ impl LogView {
             items: Vec::new(),
             menu_window: newwin(1, 1, 0, 0),
             details: newwin(2, 2, 0, 0),
+            details_window: newwin(2, 2, 0, 0),
             log,
         };
 
@@ -101,27 +112,63 @@ impl LogView {
 
         wresize(self.details, LINES()-2, COLS()-cols);
         mvwin(self.details, 0, cols);
+        wresize(self.details_window, LINES()-4, (COLS()-cols)-3);
+        mvwin(self.details_window, 1, cols+2);
+
         self.draw_window();
 
     }
+
 
     fn draw_window(&mut self) {
         //need a subwindow to prevent destroying border
 
         let index = item_index(current_item(self.menu)) as usize;
+        let ref mission = self.log.mission_list()[index];
 
         werase(self.details);
         box_(self.details, 0, 0);
         mvwprintw(self.details, 0, 2, "MISSION DETAILS");
-        mvwprintw(self.details, 2, 2, &format!("TIMESTAMP: {}", self.log.mission_list()[index].timestamp));
-        mvwprintw(self.details, 3, 2, &format!("MISSION BRIEF: {}", self.log.mission_list()[index].description));
         wrefresh(self.details);
+
+        werase(self.details_window);
+
+        wmove(self.details_window, 1, 0);
+
+        let pretty_format = |ref utc: DateTime<Utc>| {
+            let local = utc.with_timezone(&Local);
+            let fmt = format!("%A, the {}{} of %B at %H:%M:%S", local.day(), day_suffixer(local.day()));
+            local.format(&fmt).to_string()
+        };
+        wprint(self.details_window, &format!("{} ({})\n{}\n", mission.title, pretty_format(mission.timestamp), mission.description));
+        
+
+        for entry in &mission.entries {
+            wprint(self.details_window, &format!("\n{}\n", pretty_format(entry.timestamp)));
+            wprint(self.details_window, &format!("{}\n", entry.entry_text));
+        }
+
+        wrefresh(self.details_window);
 
         // Probably needs to be redone anytime the details window is redone
         clrprint(LINES()-2, 0, "ALWS pre-alpha development build");
         clrprint(LINES()-1, 0, "Press <ENTER> to perform <UNSPECIFIED>, Q to quit");
     }
 
+}
+
+
+fn day_suffixer(day: u32) -> String {
+    if day >= 11 && day <= 13 {
+        return "th".to_string();
+    }
+    match day % 10 {
+        1 => return "st".to_string(),
+        2 => return "nd".to_string(),
+        3 => return "rd".to_string(),
+        _ => return "th".to_string(),
+
+    }
 }
 
 fn main() {

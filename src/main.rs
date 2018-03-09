@@ -137,14 +137,24 @@ impl LogView {
 
         let pretty_format = |ref utc: DateTime<Utc>| {
             let local = utc.with_timezone(&Local);
-            let fmt = format!("%A, the {}{} of %B at %H:%M:%S", local.day(), day_suffixer(local.day()));
+            let fmt = format!("%A, the {}{} of %B at %T", local.day(), day_suffixer(local.day()));
             local.format(&fmt).to_string()
         };
-        wprint(self.details_window, &format!("{} ({})\n{}\n", mission.title, pretty_format(mission.timestamp), mission.description));
+
+        let status = match &mission.completion {
+            &None => "Ongoing".to_string(),
+            &Some(ref dt) => format!("Completion on {}", pretty_format(dt.timestamp)),
+        };
+        wprint(self.details_window, &format!("{}\nStatus: {} since {}\n\nMission brief:\n{}\n", mission.title, status, pretty_format(mission.timestamp), mission.description));
         
+        let basic_format = |ref utc: DateTime<Utc>| {
+            let local = utc.with_timezone(&Local);
+            let fmt = format!("%F at %T");
+            local.format(&fmt).to_string()
+        };
 
         for entry in &mission.entries {
-            wprint(self.details_window, &format!("\n{}\n", pretty_format(entry.timestamp)));
+            wprint(self.details_window, &format!("\n{}\n", basic_format(entry.timestamp)));
             wprint(self.details_window, &format!("{}\n", entry.entry_text));
         }
 

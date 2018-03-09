@@ -34,12 +34,8 @@ impl Mission {
         }
     }
 
-    pub fn add_entry(&mut self, entry_text: String) {
-        let entry = MissionEntry {
-            timestamp: Utc::now(),
-            entry_text,
-        };
-        self.entries.push(entry); 
+    pub fn add_entry(&mut self, entry: MissionEntry) {
+        self.entries.push(entry);
     }
 }
 
@@ -47,6 +43,15 @@ impl Mission {
 pub struct MissionEntry {
     pub timestamp: DateTime<Utc>,
     pub entry_text: String,
+}
+
+impl MissionEntry {
+    pub fn new(entry_text: String) -> Self {
+        MissionEntry {
+            timestamp: Utc::now(),
+            entry_text,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -95,9 +100,8 @@ pub fn write_to_file(path: &PathBuf, log: &Log) {
 
 fn create_log() -> Log {
     let mut graph = Graph::<Mission, Option<String>>::new();
-    let mut mission = Mission::new("A Life Well Spent".to_string(), "The winds of a new beginning blow".to_string());
-    mission.add_entry("Something happened on this date".to_string());
-    let mut mission2 = Mission::new("A Test of Courage".to_string(), "Many Bothans died to bring us this information".to_string());
+    let mission = Mission::new("A Life Well Spent".to_string(), "The winds of a new beginning blow".to_string());
+    let mission2 = Mission::new("A Test of Courage".to_string(), "Many Bothans died to bring us this information".to_string());
     graph.add_node(mission);
     graph.add_node(mission2);
     Log { graph }

@@ -4,6 +4,7 @@ use alws::*;
 extern crate chrono;
 use chrono::prelude::*;
 
+mod editor;
 
 extern crate ncurses;
 use ncurses::*;
@@ -201,7 +202,16 @@ fn main() {
     let mut ch = getch();
     while ch != 81 && ch != 113 /* Upper and lower case Q */ {
         match ch {
-            65 | 97 => {
+            65 | 97 => /* A */ {
+                
+                let entry = MissionEntry::new(String::new());
+                let index = item_index(current_item(lv.menu)) as usize;
+                {
+                    let ref mut mission = lv.log.mission_list()[index];
+                    mission.add_entry(entry);
+                }
+                lv.draw_window();
+
 
             },
             KEY_RESIZE => {

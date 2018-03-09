@@ -141,11 +141,12 @@ impl LogView {
             local.format(&fmt).to_string()
         };
 
+        let start = mission.timestamp.clone();
         let status = match &mission.completion {
-            &None => "Ongoing".to_string(),
+            &None => format!("Ongoing since {}", pretty_format(start)),
             &Some(ref dt) => format!("Completion on {}", pretty_format(dt.timestamp)),
         };
-        wprint(self.details_window, &format!("{}\nStatus: {} since {}\n\nMission brief:\n{}\n", mission.title, status, pretty_format(mission.timestamp), mission.description));
+        wprint(self.details_window, &format!("{}\nStatus: {}\n\nMission brief:\n{}\n", mission.title, status, mission.description));
         
         let basic_format = |ref utc: DateTime<Utc>| {
             let local = utc.with_timezone(&Local);

@@ -17,6 +17,7 @@ impl Buffer {
 
 	pub fn capture_input(&self, lv: &mut LogView) {
 
+		curs_set(CURSOR_VISIBILITY::CURSOR_VERY_VISIBLE);
 		let mut ch = getch();
 		while ch != 10 {
 			match ch {
@@ -34,6 +35,8 @@ impl Buffer {
 			}
 			ch = getch();
 		}
+		curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+
 
 	}
 

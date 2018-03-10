@@ -28,10 +28,12 @@ impl LogView {
 
         lv.free_menu();
         lv.build_menu(0);
+        lv.draw_lower_text();
         lv
     }
 
     pub fn resize(&mut self) {
+        self.draw_lower_text();
         let index = item_index(current_item(self.menu)) as usize;
         unpost_menu(self.menu);
         self.free_menu();
@@ -134,13 +136,17 @@ impl LogView {
         };
 
         for entry in &mission.entries {
-            wprint(self.details_window, &format!("\n{}\n", basic_format(entry.timestamp)));
-            wprint(self.details_window, &format!("{}\n", entry.entry_text));
+            wprint(self.details_window, &format!("\n\n{}\n", basic_format(entry.timestamp)));
+            wprint(self.details_window, &format!("{}", entry.entry_text));
         }
 
         wrefresh(self.details_window);
 
-        // Probably needs to be redone anytime the details window is redone
+
+    }
+
+    pub fn draw_lower_text(&mut self) {
+                // Probably needs to be redone anytime the details window is redone
         clrprint(LINES()-2, 0, "ALWS pre-alpha development build");
         clrprint(LINES()-1, 0, "Press <ENTER> to perform <UNSPECIFIED>, Q to quit");
     }

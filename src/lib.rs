@@ -14,7 +14,7 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub struct Mission {
     pub title: String,
     pub description: String,
@@ -39,7 +39,7 @@ impl Mission {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub struct MissionEntry {
     pub timestamp: DateTime<Utc>,
     pub entry_text: String,
@@ -61,8 +61,22 @@ pub struct Log {
 
 impl Log {
 
-    pub fn mission_list(&mut self) -> Vec<&mut Mission> {
+    pub fn mission_list(&self) -> Vec<&Mission> {
+        self.graph.node_indices().map(|i| self.graph.node_weight(i).unwrap()).collect()
+    }
+
+    pub fn mission_list_mut(&mut self) -> Vec<&mut Mission> {
         self.graph.node_weights_mut().collect()
+    }
+
+    pub fn new_mission(&mut self) -> &Mission {
+        let index = self.graph.add_node(Mission::new(String::new(), String::new()));
+        self.graph.node_weight(index).unwrap()
+    }
+
+    pub fn new_mission_mut(&mut self) -> &mut Mission {
+        let index = self.graph.add_node(Mission::new(String::new(), String::new()));
+        self.graph.node_weight_mut(index).unwrap()
     }
 }
 
@@ -99,10 +113,6 @@ pub fn write_to_file(path: &PathBuf, log: &Log) {
 }
 
 fn create_log() -> Log {
-    let mut graph = Graph::<Mission, Option<String>>::new();
-    let mission = Mission::new("A Life Well Spent".to_string(), "The winds of a new beginning blow".to_string());
-    let mission2 = Mission::new("A Test of Courage".to_string(), "Many Bothans died to bring us this information".to_string());
-    graph.add_node(mission);
-    graph.add_node(mission2); 
+    let graph = Graph::<Mission, Option<String>>::new();
     Log { graph }
 }

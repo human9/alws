@@ -61,17 +61,13 @@ pub struct Log {
 
 impl Log {
 
-    pub fn mission_list(&self) -> Vec<&Mission> {
-        self.graph.node_indices().map(|i| self.graph.node_weight(i).unwrap()).collect()
-    }
-
-    pub fn mission_list_mut(&mut self) -> Vec<&mut Mission> {
+    pub fn mission_list(&mut self) -> Vec<&mut Mission> {
         self.graph.node_weights_mut().collect()
     }
 
     pub fn new_mission(&mut self) -> usize {
-        self.graph.add_node(Mission::new(String::new(), String::new()));
-        self.mission_list_mut().len() - 1
+        self.graph.add_node(Mission::new("new_mission".to_string(), String::new()));
+        self.mission_list().len() - 1
     }
 }
 

@@ -69,14 +69,9 @@ impl Log {
         self.graph.node_weights_mut().collect()
     }
 
-    pub fn new_mission(&mut self) -> &Mission {
-        let index = self.graph.add_node(Mission::new(String::new(), String::new()));
-        self.graph.node_weight(index).unwrap()
-    }
-
-    pub fn new_mission_mut(&mut self) -> &mut Mission {
-        let index = self.graph.add_node(Mission::new(String::new(), String::new()));
-        self.graph.node_weight_mut(index).unwrap()
+    pub fn new_mission(&mut self) -> usize {
+        self.graph.add_node(Mission::new(String::new(), String::new()));
+        self.mission_list_mut().len() - 1
     }
 }
 
